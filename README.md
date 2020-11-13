@@ -25,6 +25,8 @@ MYALERTS_IGNORE_PATTERNS=(
 )
 ```
 
+It will use your server's mail system, so if you want this script to work properly you have to setup one for outgoing mails.
+
 ## Installation
 - You can either [download](https://github.com/tamas646/myalerts-phperror/raw/main/myalerts-phperror_1.3.0_all.deb) and install the deb package or use the source code and setup it yourself.
 
