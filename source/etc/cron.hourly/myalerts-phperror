@@ -1,0 +1,103 @@
+#!/bin/bash
+
+set -e
+
+DATA_FILE="/var/lib/myalerts/phperror-last"
+CONFIG_FILE="/etc/myalerts/phperror.config"
+
+. "$CONFIG_FILE"
+
+if [[ "$MYALERTS_EMAIL" == "" ]]
+then
+	echo "Error: email address not defined"
+	exit 1
+fi
+if [[ ! -d "`dirname "$DATA_FILE"`" ]]
+then
+	mkdir -p "`dirname "$DATA_FILE"`"
+fi
+
+match_any_pattern()
+{
+	local i=0
+	while [[ $i -lt ${#MYALERTS_IGNORE_PATTERNS[@]} ]]
+	do
+		if [[ "$1" =~ ${MYALERTS_IGNORE_PATTERNS[$i]} ]]
+		then
+			return 0
+		fi
+		i=$((i+1))
+	done
+	return 1
+}
+
+i=0
+while [[ $i -lt ${#MYALERTS_LOG_FILES[@]} ]]
+do
+	nickname="${MYALERTS_LOG_FILES[$i]}"
+	i=$((i+1))
+	log_file="${MYALERTS_LOG_FILES[$i]}"
+	if [[ ! -f "$log_file" ]]
+	then
+		echo "Warning: log file not found at '$log_file'"
+		continue
+	fi
+	capture=1
+	last=""
+	if [[ -f "${DATA_FILE}${nickname}" ]]
+	then
+		last="$(cat "${DATA_FILE}${nickname}")"
+		if [[ "$last" != "" ]]
+		then
+			capture=0
+		fi
+	fi
+	email_content=""
+	if [[ -f "${log_file}.1" ]]
+	then
+		while read line
+		do
+			if [[ $capture == 1 ]]
+			then
+				last="$line"
+				if ! match_any_pattern "$line"
+				then
+					email_content="$email_content"$'\n'"$line"
+				fi
+			elif [[ "$line" == "$last" ]]
+			then
+				capture=1
+			fi
+		done < "${log_file}.1"
+	fi
+	while read line
+	do
+		if [[ $capture == 1 ]]
+		then
+			last="$line"
+			if ! match_any_pattern "$line"
+			then
+				email_content="$email_content"$'\n'"$line"
+			fi
+		elif [[ "$line" == "$last" ]]
+		then
+			capture=1
+		fi
+	done < "$log_file"
+
+	echo "$last" > "${DATA_FILE}${nickname}"
+
+	if [[ "$email_content" != "" ]]
+	then
+		mail -s "Serverside: PHP error - $nickname" "$MYALERTS_EMAIL" <<EOF
+PHP error on website $nickname!
+
+PHP or other kind of webserver error occured on machine `/bin/hostname`.
+Date: `date +'%Y.%m.%d %H:%M:%S'`
+Error message:
+$email_content
+
+EOF
+	fi
+	i=$((i+1))
+done

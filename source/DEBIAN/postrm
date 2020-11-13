@@ -1,0 +1,19 @@
+#!/bin/bash
+
+set -e
+
+case "$1" in
+	purge)
+		if ls /var/lib/myalerts/phperror-last* 1> /dev/null 2>&1
+		then
+			rm /var/lib/myalerts/phperror-last*
+		fi
+
+		if [[ -d /var/lib/myalerts && -z "$(ls -A /var/lib/myalerts)" ]]
+		then
+			rmdir /var/lib/myalerts
+		fi
+		;;
+	*)
+		;;
+esac
