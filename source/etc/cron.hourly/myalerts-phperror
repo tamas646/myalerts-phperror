@@ -40,6 +40,7 @@ do
 	if [[ ! -f "$log_file" ]]
 	then
 		echo "Warning: log file not found at '$log_file'"
+		i=$((i+1))
 		continue
 	fi
 	capture=1
