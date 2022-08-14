@@ -86,7 +86,12 @@ do
 		fi
 	done < "$log_file"
 
-	echo "$last" > "${DATA_FILE}${nickname}"
+	if [[ $capture == 0 ]]
+	then
+		rm "${DATA_FILE}${nickname}"
+	else
+		echo "$last" > "${DATA_FILE}${nickname}"
+	fi
 
 	if [[ "$email_content" != "" ]]
 	then
